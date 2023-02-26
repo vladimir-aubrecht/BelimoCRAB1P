@@ -2,81 +2,20 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-
-uint16_t publishing_delay = 5000;
-uint8_t lowPin = 34;
-uint8_t comfPin = 35;
-uint8_t highPin = 32;
-uint8_t switchPin = 33;
-
-const char* ssid = "REPLACE_WITH_YOUR_SSID";
-const char* password = "REPLACE_WITH_YOUR_PASSWORD";
-
-const char* mqtt_server = "YOUR_MQTT_BROKER_IP_ADDRESS";
-const int mqtt_port = 1883;
-const char* mqtt_username = "your_MQTT_username_here";
-const char* mqtt_password = "your_MQTT_password_here";
-const char* mqtt_topic = "your_MQTT_topic_here";
+#include "configuration.h"
+#include "Drivers/relay.h"
+#include "Drivers/ledReader.h"
+#include "recuperation.h"
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+Relay* relay;
+LedReader* ledReader;
+Recuperation* recuperation;
 
-uint8_t readState() {
-    uint16_t lowVoltage = analogRead(lowPin);
-    uint16_t comfVoltage = analogRead(comfPin);
-    uint16_t highVoltage = analogRead(highPin);
-
-    uint8_t selectedState = 0;  // all leds are off
-
-    if (lowVoltage > 1600) {
-        selectedState = 1;
-    } else if (comfVoltage > 1600) {
-        selectedState = 2;
-    } else if (highVoltage > 1600) {
-        selectedState = 3;
-    }
-
-    return selectedState;
-}
-
-void setState(uint8_t state) {
-    if (state == 0 || state > 3) {
-        return;
-    }
-    
-    uint8_t currentState = readState();
-
-    if (state == currentState) {
-        return;
-    }
-
-    uint8_t steps = 0;
-
-    if (state > currentState) {
-        steps = state - currentState;
-    } else {
-        steps = 3 - currentState + state; 
-    }
-
-    for (uint8_t i = 0; i < steps; i++) {
-        digitalWrite(switchPin, LOW);
-        delay(100);
-        digitalWrite(switchPin, HIGH);
-        delay(100);
-    }
-
-    digitalWrite(switchPin, LOW);
-}
+uint8_t sentStateCounter = 0;
 
 void callback(char* topic, byte* payload, unsigned int length) {
-    Serial.print("Message received on topic: ");
-    Serial.println(topic);
-    Serial.print("Message content: ");
-    for (int i = 0; i < length; i++) {
-        Serial.print((char)payload[i]);
-    }
-    Serial.println();
-
     char* message = (char*) payload;
 
     StaticJsonDocument<200> doc;
@@ -88,20 +27,30 @@ void callback(char* topic, byte* payload, unsigned int length) {
         return;
     }
     
+    uint8_t source = doc["source"];
+
+    if (source == 0) {
+        return;
+    }
+
     uint8_t selectedState = doc["air_flow_state"];
 
-    setState(selectedState);
+    recuperation->setState(selectedState);
 }
+
+#ifndef LED_BUILTIN
+int LED_BUILTIN = 2;
+#endif 
 
 void setup() {
     Serial.begin(115200);
-    pinMode(lowPin, INPUT_PULLDOWN);
-    pinMode(comfPin, INPUT_PULLDOWN);
-    pinMode(highPin, INPUT_PULLDOWN);
-    pinMode(switchPin, OUTPUT);
+    pinMode (LED_BUILTIN, OUTPUT);
 
+    relay = new Relay(RECUPERATION_SWITCH_PIN, RECUPERATION_SWITCH_DELAY, &Serial);
+    ledReader = new LedReader(RECUPERATION_LED_LOW_PIN, RECUPERATION_LED_COMF_PIN, RECUPERATION_LED_HIGH_PIN);
+    recuperation = new Recuperation(ledReader, relay, &Serial);
 
-    WiFi.begin(ssid, password);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     while (WiFi.status() != WL_CONNECTED) {
         delay(1000);
         Serial.println("Connecting to WiFi...");
@@ -109,14 +58,14 @@ void setup() {
 
     Serial.println("Connected to WiFi");
     
-    client.setServer(mqtt_server, mqtt_port);
+    client.setServer(MQTT_SERVER_HOST, MQTT_SERVER_PORT);
     client.setCallback(callback);
 
     while (!client.connected()) {
         Serial.println("Connecting to MQTT server...");
-        if (client.connect("BelimoCRAB1P", mqtt_username, mqtt_password )) {
+        if (client.connect(MQTT_CLIENT_ID, MQTT_SERVER_USERNAME, MQTT_SERVER_PASSWORD )) {
             Serial.println("Connected to MQTT server");
-            client.subscribe(mqtt_topic);
+            client.subscribe(MQTT_CLIENT_TOPIC);
         }
         else {
             Serial.print("Failed with state ");
@@ -124,19 +73,28 @@ void setup() {
             delay(2000);
         }
     }
+
+    recuperation->setState(1);
 }
 
 void loop() {
-    uint8_t selectedState = readState();
+    digitalWrite(LED_BUILTIN, HIGH);
 
-    char payload[21];
-    snprintf(payload, 21, "{\"air_flow_state\": %d}", selectedState);
-    
-    Serial.println("Sending payload:");
-    Serial.println(payload);
+    uint8_t selectedState = ledReader->readState();
 
-    client.publish(mqtt_topic, payload);
-    Serial.println(payload);
+    if (sentStateCounter != selectedState) {
+        sentStateCounter = selectedState;
+
+        char payload[35];
+        snprintf(payload, 35, "{\"air_flow_state\": %d, \"source\": 0}", selectedState);
+        
+        Serial.println("Sending payload:");
+        Serial.println(payload);
+        client.publish(MQTT_CLIENT_TOPIC, payload);
+        Serial.println(payload);
+    }
+
     client.loop();
-    delay(publishing_delay);
+    
+    delay(MCU_DEFAULT_LOOP_DELAY);
 }
