@@ -3,10 +3,39 @@ This repository documents how to extend air recuperation controller Belimo CRA-B
 
 # Wiring
 
-Belimo CRA-B1P does not have any connector or anything which would allow to plug smart functionality and therefore you'll need to solder few wires:
-- 2 wires to button - these are connected to relay and simulates button press. Relay is used as high voltage (12V) is going through the button.
-- 3 wires to LEDs (one to each) - these are used to read voltage on LEDs to detect current state:
-    - If no LED is on, controller rebooted.
-    - If one of them is on, then it has voltage around 2V (code is using 1.6V as minimum to consider it on), otherwise it is around 0V.
+## Preparation of CRA-B1P
+Belimo CRA-B1P does not have any connector or anything which would allow to plug smart functionality and therefore you'll need to solder few wires (see picture):
 
-Powering of microcontroller is not solved at this moment, meaning recommended way is to use battery or extra USB cable from somewhere. I believe it should be possible to power it up directly from Belimo CRA-B1P, but it will require extra components as Belimo CRA-B1P is powered up by 12V AC which is not compatible with common microcontrollers.
+- 2 wires to button - these are connected to relay and simulates button press.
+- 2 wires to [HEF4017B](https://cz.mouser.com/datasheet/2/916/HEF4017B-2937910.pdf) chip for 12V DC power.
+- [Untested yet] 3 wires to LEDs (one to each) - these are used to read voltage on LEDs to detect current state
+
+![Wiring](docs/images/button_and_power_wiring.jpg)
+
+Picture is showing only power and button soldering places as those I already tested.
+
+## Preparation of other hardware
+
+Additional hardware needed:
+- [Adafruit Huzzah32 ESP32 Feather board](https://www.adafruit.com/product/3405) or any other Esp32 <sup>1</sup> MCU which has wifi and can be powered externally <sup>2</sup>. 
+- ~13V DC -> 5V DC Step down Convertor. I used [Mini-360 step down MP1484](https://www.laskakit.cz/mini-360-step-down-menic-mp1484--nastavitelny/). :warning: Don't forget to set the resistance properly before connecting it to MCU, otherwise you'll burn it.
+- [470 uF capacitor](https://dratek.cz/arduino/7826-kondenzator-470uf-50v.html). Used for voltage stabilization as my MCU was too sensitive.
+- [Single channel relay](https://dratek.cz/arduino/886-arduino-rele-5v-1-kanal.html). Used to switch the button.
+
+## Wiring
+
+At this point we have available these wires:
+- DC +12V
+- GND
+- Button left wire
+- Button right wire
+
+Here is the scheme showing connection of those wires to rest of the hardware:
+// TODO: Add scheme
+
+
+
+# Bottom notes
+1. Esp32 requirement is there purely for compatibility with firmware, but if you don't mind changes in it, you can use anything with wifi what can be powered externally.
+2. I didn't manage to power externally [ESP-WROOM-32](https://www.neven.cz/kategorie/elektronicke-soucastky/elektronicky-vyvoj/vyvojove-desky/ostatni/esp-wroom-32-esp32-esp-32s-2-4ghz-vyvojarska-deska-s-wifi-bt/) :-/
+3. You can use also 3.3V if your MCU is supporting it. I used 5V because I wanted to keep 3.3V PIN free for connecting of relay, but there are other ways to solve it.
