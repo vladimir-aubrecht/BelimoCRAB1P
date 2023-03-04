@@ -8,7 +8,7 @@ Belimo CRA-B1P does not have any connector or anything which would allow to plug
 
 - 2 wires to button - these are connected to relay and simulates button press.
 - 2 wires to [HEF4017B](https://cz.mouser.com/datasheet/2/916/HEF4017B-2937910.pdf) chip for 12V DC power.
-- [Untested yet] 3 wires to LEDs (one to each) - these are used to read voltage on LEDs to detect current state
+- 3 wires to LEDs (one to each) - these are used to read voltage on LEDs to detect current state.
 
 ![Wiring](docs/images/button_and_power_wiring.jpg)
 
