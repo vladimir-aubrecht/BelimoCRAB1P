@@ -1,6 +1,13 @@
 # What is this project about?
 This repository documents how to extend air recuperation controller Belimo CRA-B1P in a way you can control it through MQTT and plug it into your smart home.
 
+# Showcase
+
+This is how my final solution looks like. 3D models for printing will be shared shortly.
+
+Without cover:
+![Showcase without cover](./docs/images/final_solution_without_cover.jpg)
+
 # Wiring
 
 ## Preparation of CRA-B1P
