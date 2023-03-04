@@ -21,6 +21,7 @@ Additional hardware needed:
 - ~13V DC -> 5V DC Step down Convertor. I used [Mini-360 step down MP1484](https://www.laskakit.cz/mini-360-step-down-menic-mp1484--nastavitelny/). <br/>:warning: Don't forget to set the resistance properly before connecting it to MCU, otherwise you'll burn it.
 - [470 uF capacitor](https://dratek.cz/arduino/7826-kondenzator-470uf-50v.html). Used for voltage stabilization as my MCU was too sensitive.
 - [Single channel relay](https://dratek.cz/arduino/886-arduino-rele-5v-1-kanal.html). Used to switch the button.
+- 3x 2 KOhm resistor & 3x 10 KOhm resistor. Those are used to pull down the LEDs and divide the voltage as voltage is too high to read it directly on analog input.
 
 ## Wiring
 
@@ -29,10 +30,15 @@ At this point we have available these wires:
 - GND
 - Button left wire
 - Button right wire
+- LED Comf
+- LED Min
+- LED Max
+
+All these wires are marked as "External" on a scheme.
 
 Here is the scheme showing connection of those wires to rest of the hardware:
-<br/><br/>
-// TODO: Add scheme
+
+![Scheme](./docs/images/scheme.png)
 
 
 
