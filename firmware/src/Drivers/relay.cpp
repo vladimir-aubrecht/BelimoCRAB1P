@@ -27,15 +27,9 @@ void Relay::setRelay(bool enable)
     }
 }
 
-void Relay::switchOnByCount(uint8_t count)
+void Relay::toggle()
 {
-    this->serial->print("Number of steps: ");
-    this->serial->println(count);
-
-    for (uint8_t i = 0; i < count; i++) {
         this->setRelay(false);
         this->setRelay(true);
-    }
-
-    this->setRelay(false);
+        this->setRelay(false);
 }

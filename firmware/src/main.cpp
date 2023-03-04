@@ -13,7 +13,7 @@ Relay* relay;
 LedReader* ledReader;
 Recuperation* recuperation;
 
-uint8_t sentStateCounter = 0;
+uint8_t sentStateCounter = -1;
 
 void callback(char* topic, byte* payload, unsigned int length) {
     char* message = (char*) payload;
@@ -74,19 +74,20 @@ void setup() {
         }
     }
 
+    delay(10000);
     recuperation->setState(1);
+    delay(1000);
+    recuperation->setState(3);
 }
 
 void loop() {
-    digitalWrite(LED_BUILTIN, HIGH);
-
-    uint8_t selectedState = ledReader->readState();
+    uint16_t selectedState = ledReader->readState();
 
     if (sentStateCounter != selectedState) {
         sentStateCounter = selectedState;
 
-        char payload[35];
-        snprintf(payload, 35, "{\"air_flow_state\": %d, \"source\": 0}", selectedState);
+        char payload[41];
+        snprintf(payload, 41, "{\"air_flow_state\": %d, \"source\": 0}", selectedState);
         
         Serial.println("Sending payload:");
         Serial.println(payload);

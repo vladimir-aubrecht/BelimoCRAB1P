@@ -14,11 +14,11 @@ void Recuperation::setState(uint8_t state) {
 
     this->serial->print("Requested state: ");
     this->serial->println(state);
-    
-    uint8_t steps = this->ledReader->getDistanceFromState(state);
 
-    this->ledReader->setState(state);
-    this->relay->switchOnByCount(steps);
+    while (this->ledReader->readState() != state)
+    {
+        this->relay->toggle();
+    }
 
     this->serial->println("State set.");
 }
