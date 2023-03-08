@@ -53,3 +53,6 @@ Here is the scheme showing connection of those wires to rest of the hardware:
 1. Esp32 requirement is there purely for compatibility with firmware, but if you don't mind changes in it, you can use anything with wifi what can be powered externally.
 2. I didn't manage to power externally [ESP-WROOM-32](https://www.neven.cz/kategorie/elektronicke-soucastky/elektronicky-vyvoj/vyvojove-desky/ostatni/esp-wroom-32-esp32-esp-32s-2-4ghz-vyvojarska-deska-s-wifi-bt/) :-/
 3. You can use also 3.3V if your MCU is supporting it. I used 5V because I wanted to keep 3.3V PIN free for connecting of relay, but there are other ways to solve it.
+
+# Disclaimer
+I don't provide any kind of guarantees neither I am responsible for any possible damage which can appear by implementing of this project.
