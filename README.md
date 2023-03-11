@@ -24,11 +24,13 @@ Picture is showing only power and button soldering places as those I already tes
 ## Preparation of other hardware
 
 Additional hardware needed:
-- [Adafruit Huzzah32 ESP32 Feather board](https://www.adafruit.com/product/3405) or any other Esp32 <sup>1</sup> MCU which has wifi and can be powered externally <sup>2</sup>. 
+- [Adafruit Huzzah32 ESP32 Feather board](https://www.adafruit.com/product/3405) or any other Esp32 <sup>1</sup> MCU which has wifi and can be powered externally <sup>2</sup>. Models are designed for size with stacking headers.
 - ~13V DC -> 5V DC Step down Convertor. I used [Mini-360 step down MP1484](https://www.laskakit.cz/mini-360-step-down-menic-mp1484--nastavitelny/). <br/>:warning: Don't forget to set the resistance properly before connecting it to MCU, otherwise you'll burn it.
 - [470 uF capacitor](https://dratek.cz/arduino/7826-kondenzator-470uf-50v.html). Used for voltage stabilization as my MCU was too sensitive.
 - [Single channel relay](https://dratek.cz/arduino/886-arduino-rele-5v-1-kanal.html). Used to switch the button.
 - 3x 2 KOhm resistor & 3x 10 KOhm resistor. Those are used to pull down the LEDs and divide the voltage as voltage is too high to read it directly on analog input.
+- [FeatherWing Proto](https://www.adafruit.com/product/2884) - Used for creating of 3 channels voltage divider for signal from LEDs.
+- [3D Models](https://www.printables.com/model/418686-belimo-cra24-b1p-smart-extension)
 
 ## Wiring
 
