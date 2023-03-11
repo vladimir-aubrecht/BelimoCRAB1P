@@ -7,8 +7,8 @@
 
 #define MQTT_SERVER_HOST "<PUT HERE YOUR MQTT SERVER DOMAIN or IP>"
 #define MQTT_SERVER_PORT 1883
-#define MQTT_SERVER_USERNAME NULL // You can provide username for MQTT server if needed
-#define MQTT_SERVER_PASSWORD NULL // You can provide password for MQTT server if needed
+#define MQTT_SERVER_USERNAME "" // You can provide username for MQTT server if needed
+#define MQTT_SERVER_PASSWORD "" // You can provide password for MQTT server if needed
 #define MQTT_CLIENT_TOPIC "wifi2mqtt/air_recuperation"
 #define MQTT_CLIENT_ID "BelimoCRAB1P"
 

@@ -1,42 +1,17 @@
 #include <Arduino.h>
-#include <WiFi.h>
-#include <PubSubClient.h>
-#include <ArduinoJson.h>
 #include "configuration.h"
 #include "Drivers/relay.h"
 #include "Drivers/ledReader.h"
 #include "recuperation.h"
+#include "mqttClient.h"
+#include "configurationServer.h"
+#include "settings.h"
 
-WiFiClient espClient;
-PubSubClient client(espClient);
 Relay* relay;
 LedReader* ledReader;
 Recuperation* recuperation;
-
-uint8_t sentStateCounter = -1;
-
-void callback(char* topic, byte* payload, unsigned int length) {
-    char* message = (char*) payload;
-
-    StaticJsonDocument<200> doc;
-    DeserializationError error = deserializeJson(doc, payload, length);
-    
-    if (error) {
-        Serial.print("Failed to parse JSON data: ");
-        Serial.println(error.c_str());
-        return;
-    }
-    
-    uint8_t source = doc["source"];
-
-    if (source == 0) {
-        return;
-    }
-
-    uint8_t selectedState = doc["air_flow_state"];
-
-    recuperation->setState(selectedState);
-}
+MqttClient* mqttClient;
+ConfigurationServer* configurationServer = NULL;
 
 #ifndef LED_BUILTIN
 int LED_BUILTIN = 2;
@@ -49,53 +24,28 @@ void setup() {
     relay = new Relay(RECUPERATION_SWITCH_PIN, RECUPERATION_SWITCH_DELAY, &Serial);
     ledReader = new LedReader(RECUPERATION_LED_LOW_PIN, RECUPERATION_LED_COMF_PIN, RECUPERATION_LED_HIGH_PIN);
     recuperation = new Recuperation(ledReader, relay, &Serial);
-
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(1000);
-        Serial.println("Connecting to WiFi...");
-    }
-
-    Serial.println("Connected to WiFi");
+    mqttClient = new MqttClient(recuperation, &Serial);
     
-    client.setServer(MQTT_SERVER_HOST, MQTT_SERVER_PORT);
-    client.setCallback(callback);
+    Settings* settings = new Settings(WIFI_SSID,  WIFI_PASSWORD, MQTT_SERVER_HOST, MQTT_SERVER_PORT, MQTT_SERVER_USERNAME, MQTT_SERVER_PASSWORD, MQTT_CLIENT_ID, MQTT_CLIENT_TOPIC);
 
-    while (!client.connected()) {
-        Serial.println("Connecting to MQTT server...");
-        if (client.connect(MQTT_CLIENT_ID, MQTT_SERVER_USERNAME, MQTT_SERVER_PASSWORD )) {
-            Serial.println("Connected to MQTT server");
-            client.subscribe(MQTT_CLIENT_TOPIC);
-        }
-        else {
-            Serial.print("Failed with state ");
-            Serial.print(client.state());
-            delay(2000);
-        }
+    if (!mqttClient->initialise(settings))
+    {
+        configurationServer = new ConfigurationServer(settings);
     }
-
-    delay(10000);
-    recuperation->setState(1);
-    delay(1000);
-    recuperation->setState(3);
+    else
+    {
+        delay(10000);
+        recuperation->setState(1);
+        delay(1000);
+        recuperation->setState(3);
+    }
 }
 
 void loop() {
-    uint16_t selectedState = ledReader->readState();
-
-    if (sentStateCounter != selectedState) {
-        sentStateCounter = selectedState;
-
-        char payload[41];
-        snprintf(payload, 41, "{\"air_flow_state\": %d, \"source\": 0}", selectedState);
-        
-        Serial.println("Sending payload:");
-        Serial.println(payload);
-        client.publish(MQTT_CLIENT_TOPIC, payload);
-        Serial.println(payload);
+    if (configurationServer == NULL) {
+        uint16_t selectedState = ledReader->readState();
+        mqttClient->processState(selectedState);
     }
 
-    client.loop();
-    
     delay(MCU_DEFAULT_LOOP_DELAY);
 }
