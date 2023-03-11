@@ -15,7 +15,7 @@ class Settings
         String defaultMqttClientTopic;
 
     public:
-        String wifiUsername;
+        String wifiSSID;
         String wifiPassword;
         String mqttServerHost;
         uint16_t mqttServerPort;

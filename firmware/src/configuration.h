@@ -2,10 +2,10 @@
 
 #include <Arduino.h>
 
-#define WIFI_SSID "<PUT HERE YOUR WIFI SSID>"
-#define WIFI_PASSWORD "<PUT HERE YOUR WIFI PASSWORD>"
+#define WIFI_SSID "[PUT HERE YOUR WIFI SSID]"
+#define WIFI_PASSWORD "[PUT HERE YOUR WIFI PASSWORD]"
 
-#define MQTT_SERVER_HOST "<PUT HERE YOUR MQTT SERVER DOMAIN or IP>"
+#define MQTT_SERVER_HOST "[PUT HERE YOUR MQTT SERVER DOMAIN or IP]"
 #define MQTT_SERVER_PORT 1883
 #define MQTT_SERVER_USERNAME "" // You can provide username for MQTT server if needed
 #define MQTT_SERVER_PASSWORD "" // You can provide password for MQTT server if needed

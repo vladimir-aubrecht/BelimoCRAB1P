@@ -37,7 +37,7 @@ bool MqttClient::initialise(Settings* settings)
     settings->read();
     this->mqttTopic = settings->mqttClientTopic.c_str();
 
-    WiFi.begin(settings->wifiUsername.c_str(), settings->wifiPassword.c_str());
+    WiFi.begin(settings->wifiSSID.c_str(), settings->wifiPassword.c_str());
     int8_t wifiRetryCount = 0;
     for (wifiRetryCount = 0; wifiRetryCount < 10 && WiFi.status() != WL_CONNECTED; wifiRetryCount++) {
         delay(1000);
@@ -45,6 +45,7 @@ bool MqttClient::initialise(Settings* settings)
     }
 
     if (wifiRetryCount >= 10) {
+        this->serial->println("Giving up connecting to wifi.");
         return false;
     }
 

@@ -30,7 +30,7 @@ void setup() {
 
     if (!mqttClient->initialise(settings))
     {
-        configurationServer = new ConfigurationServer(settings);
+        configurationServer = new ConfigurationServer(settings, &Serial);
     }
     else
     {

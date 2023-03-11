@@ -17,7 +17,7 @@ Settings::Settings(String defaultWifiSSID, String defaultWifiPassword, String de
 void Settings::read()
 {
     this->preferences->begin("credentials", true); 
-    this->wifiUsername = preferences->getString("wifiUsername", this->defaultWifiSSID);
+    this->wifiSSID = preferences->getString("wifiSSID", this->defaultWifiSSID);
     this->wifiPassword = preferences->getString("wifiPassword", this->defaultWifiPassword);
     this->mqttServerHost = preferences->getString("mqttServerHost", this->defaultMqttServerHost);
     this->mqttServerPort = preferences->getUShort("mqttServerPort", this->defaultMqttServerPort);
@@ -32,7 +32,7 @@ void Settings::read()
 void Settings::store()
 {
     this->preferences->begin("credentials", false); 
-    preferences->putString("wifiUsername", this->wifiUsername);
+    preferences->putString("wifiSSID", this->wifiSSID);
     preferences->putString("wifiPassword", this->wifiPassword);
     preferences->putString("mqttServerHost", this->mqttServerHost);
     preferences->putUShort("mqttServerPort", this->mqttServerPort);
