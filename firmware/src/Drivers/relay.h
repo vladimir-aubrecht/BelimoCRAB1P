@@ -1,16 +1,16 @@
 #pragma once
 #include "Arduino.h"
-
+#include "Loggers/ILogger.h"
 
 class Relay
 {
     private:
         uint8_t relayPin;
         uint16_t delayInMs;
-        HardwareSerial* serial;
+        ILogger* logger;
 
     public:
-        Relay(uint8_t relayPin, uint16_t delayInMS, HardwareSerial* serial);
+        Relay(uint8_t relayPin, uint16_t delayInMS, ILogger* logger);
         void setRelay(bool enable);
         void toggle();
 };

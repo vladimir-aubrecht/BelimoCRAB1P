@@ -1,14 +1,16 @@
 #pragma once
-#include "settings.h"
+#include "Settings.h"
+#include <AsyncElegantOTA.h>
 #include <ESPAsyncWebServer.h>
-
+#include <AsyncTCP.h>
+#include "SPIFFS.h"
+#include "Loggers/ILogger.h"
 
 class ConfigurationServer
 {
     private:
         AsyncWebServer* server;
-        String generateIndexPage(Settings* settings);
 
     public:
-        ConfigurationServer(Settings* settings, HardwareSerial* serial);
+        ConfigurationServer(Settings* settings, ILogger* logger);
 };

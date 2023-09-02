@@ -1,4 +1,4 @@
-#include "settings.h"
+#include "Settings.h"
 
 Settings::Settings(String defaultWifiSSID, String defaultWifiPassword, String defaultServerHost, uint16_t defaultServerPort, String defaultMqttServerUsername, String defaultMqttServerPassword, String defaultMqttClientId, String defaultMqttClientTopic)
 {

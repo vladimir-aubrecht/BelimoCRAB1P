@@ -1,10 +1,10 @@
-#include "mqttClient.h"
+#include "MqttClient.h"
 #include <ArduinoJson.h>
 
-MqttClient::MqttClient(Recuperation* recuperation, HardwareSerial* serial)
+MqttClient::MqttClient(Recuperation* recuperation, ILogger* logger)
 {
     this->recuperation = recuperation;
-    this->serial = serial;
+    this->logger = logger;
     this->wiFiClient = new WiFiClient();
     this->client = new PubSubClient(*this->wiFiClient);
 }
@@ -16,8 +16,8 @@ void MqttClient::callback(char* topic, byte* payload, unsigned int length) {
     DeserializationError error = deserializeJson(doc, payload, length);
     
     if (error) {
-        this->serial->print("Failed to parse JSON data: ");
-        this->serial->println(error.c_str());
+        this->logger->error("Failed to parse JSON data: ");
+        this->logger->error(error.c_str());
         return;
     }
     
@@ -34,23 +34,7 @@ void MqttClient::callback(char* topic, byte* payload, unsigned int length) {
 
 bool MqttClient::initialise(Settings* settings)
 {
-    settings->read();
-    this->mqttTopic = settings->mqttClientTopic.c_str();
-
-    WiFi.begin(settings->wifiSSID.c_str(), settings->wifiPassword.c_str());
-    int8_t wifiRetryCount = 0;
-    for (wifiRetryCount = 0; wifiRetryCount < 10 && WiFi.status() != WL_CONNECTED; wifiRetryCount++) {
-        delay(1000);
-        this->serial->println("Connecting to WiFi...");
-    }
-
-    if (wifiRetryCount >= 10) {
-        this->serial->println("Giving up connecting to wifi.");
-        return false;
-    }
-
-    this->serial->println("Connected to WiFi");
-    
+    this->mqttTopic = settings->mqttClientTopic.c_str();    
     this->client->setServer(settings->mqttServerHost.c_str(), settings->mqttServerPort);
 
     using std::placeholders::_1;
@@ -60,14 +44,14 @@ bool MqttClient::initialise(Settings* settings)
 
     int8_t mqttRetryCount = 0;
     for (mqttRetryCount = 0; mqttRetryCount < 10 && !this->client->connected(); mqttRetryCount++) {
-        this->serial->println("Connecting to MQTT server...");
+        this->logger->debug("Connecting to MQTT server...");
         if (this->client->connect(settings->mqttClientId.c_str(), settings->mqttServerUsername.c_str(), settings->mqttServerPassword.c_str() )) {
-            this->serial->println("Connected to MQTT server");
+            this->logger->debug("Connected to MQTT server");
             this->client->subscribe(settings->mqttClientTopic.c_str());
         }
         else {
-            this->serial->print("Failed with state ");
-            this->serial->print(this->client->state());
+            this->logger->error("Failed with state ");
+            this->logger->error(String(this->client->state()));
             delay(2000);
         }
     }
@@ -79,6 +63,11 @@ bool MqttClient::initialise(Settings* settings)
     return true;
 }
 
+bool MqttClient::isConnected()
+{
+    return client->connected();
+}
+
 void MqttClient::processState(uint8_t state)
 {
     if (this->sentState != state) {
@@ -87,10 +76,10 @@ void MqttClient::processState(uint8_t state)
         char payload[41];
         snprintf(payload, 41, "{\"air_flow_state\": %d, \"source\": 0}", state);
 
-        this->serial->println("Sending payload:");
-        this->serial->println(payload);
+        this->logger->debug("Sending payload:");
+        this->logger->debug(payload);
         client->publish(this->mqttTopic, payload);
-        this->serial->println(payload);
+        this->logger->debug(payload);
     }
 
     client->loop();

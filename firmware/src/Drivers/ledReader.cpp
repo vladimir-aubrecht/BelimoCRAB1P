@@ -1,4 +1,4 @@
-#include "ledReader.h"
+#include "LedReader.h"
 
 LedReader::LedReader(uint8_t lowPin, uint8_t comfPin, uint8_t maxPin)
 {

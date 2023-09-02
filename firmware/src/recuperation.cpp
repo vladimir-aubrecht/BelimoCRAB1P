@@ -1,10 +1,10 @@
-#include "recuperation.h"
+#include "Recuperation.h"
 
-Recuperation::Recuperation(LedReader* ledReader, Relay* relay, HardwareSerial* serial)
+Recuperation::Recuperation(LedReader* ledReader, Relay* relay, ILogger* logger)
 {
     this->ledReader = ledReader;
     this->relay = relay;
-    this->serial = serial;
+    this->logger = logger;
 }
 
 void Recuperation::setState(uint8_t state) {
@@ -12,13 +12,13 @@ void Recuperation::setState(uint8_t state) {
         return;
     }
 
-    this->serial->print("Requested state: ");
-    this->serial->println(state);
+    this->logger->debug("Requested state: ");
+    this->logger->debug(String(state));
 
     while (this->ledReader->readState() != state)
     {
         this->relay->toggle();
     }
 
-    this->serial->println("State set.");
+    this->logger->debug("State set.");
 }
