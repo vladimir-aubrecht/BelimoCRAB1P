@@ -1,67 +1,43 @@
-#include "configurationServer.h"
+#include "ConfigurationServer.h"
 
-String ConfigurationServer::generateIndexPage(Settings* settings)
+ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
 {
-    String indexPage = "<html>"
-        "<body>"
-            "<form method='POST' action='/credentials'>"
-                "<table>"
-                    "<tr>"
-                        "<td>Wifi SSID:</td>"
-                        "<td><input type='textbox' name='wifi_ssid' value='" + settings->wifiSSID + "'></td>"
-                    "</tr>"
-                    "<tr>"
-                        "<td>Wifi password:</td>"
-                        "<td><input type='password' name='wifi_password'></td>"
-                    "</tr>"
-                    "<tr>"
-                        "<td>Mqtt host:</td>"
-                        "<td><input type='textbox' name='mqtt_host' value='" + settings->mqttServerHost + "'></td>"
-                    "</tr>"
-                    "<tr>"
-                        "<td>Mqtt port:</td>"
-                        "<td><input type='textbox' name='mqtt_port' value='" + settings->mqttServerPort + "'></td>"
-                    "</tr>"
-                    "<tr>"
-                        "<td>Mqtt username:</td>"
-                        "<td><input type='textbox' name='mqtt_username' value='" + settings->mqttServerUsername + "'></td>"
-                    "</tr>"
-                    "<tr>"
-                        "<td>Mqtt password:</td>"
-                        "<td><input type='password' name='mqtt_password'></td>"
-                    "</tr>"
-                    "<tr>"
-                        "<td>Mqtt id:</td>"
-                        "<td><input type='textbox' name='mqtt_id' value='" + settings->mqttClientId + "'></td>"
-                    "</tr>"
-                    "<tr>"
-                        "<td>Mqtt topic:</td>"
-                        "<td><input type='textbox' name='mqtt_topic' value='" + settings->mqttClientTopic + "'></td>"
-                    "</tr>"
-                "</table>"
-                "<input type='submit' value='Update'>"
-            "</form>"
-        "</body>"
-    "</html>";
+    if(!SPIFFS.begin(true)){
+        logger->error("An Error has occurred while mounting SPIFFS");
+        return;
+    }
 
-    return indexPage;
-}
+    File file = SPIFFS.open("/index.html");
+    if(!file){
+        logger->error("Files in filesystem not found. Upload it.");
+        return;
+    }
 
-ConfigurationServer::ConfigurationServer(Settings* settings, HardwareSerial* serial)
-{
-    String indexPage = this->generateIndexPage(settings);
-
-    serial->println("Starting WIFI access point ....");
-    WiFi.mode(WIFI_AP);
-    WiFi.softAP(settings->mqttClientId.c_str());
-
-    serial->print("AP Created with IP: ");
-    serial->println(WiFi.softAPIP());
+    String indexTemplate = file.readString();
+    file.close();
 
     this->server = new AsyncWebServer(80);
 
-    this->server->on("/", HTTP_GET, [indexPage](AsyncWebServerRequest *request) {
-        request->send(200, "text/html", indexPage);
+    this->server->on("/", HTTP_GET, [indexTemplate, settings, logger](AsyncWebServerRequest *request) {
+        String buffer = "";
+        logger->render(&buffer);
+        
+        String indexPage = String(indexTemplate);
+        indexPage.replace("{wifiSSID}", settings->wifiSSID);
+        indexPage.replace("{wifiPassword}", settings->wifiPassword);
+        indexPage.replace("{mqttServerHost}", settings->mqttServerHost);
+        indexPage.replace("{mqttServerPort}", String(settings->mqttServerPort));
+        indexPage.replace("{mqttServerUsername}", settings->mqttServerUsername);
+        indexPage.replace("{mqttServerPassword}", settings->mqttServerPassword);
+        indexPage.replace("{mqttClientId}", settings->mqttClientId);
+        indexPage.replace("{mqttClientTopic}", settings->mqttClientTopic);
+        
+        request->send(200, "text/html", indexPage + buffer);
+    });
+
+    server->on("/restart", HTTP_POST, [](AsyncWebServerRequest *request) {
+        ESP.restart();
+        request->send(200, "text/plain", "Restarted.");
     });
 
     server->on("/credentials", HTTP_POST, [settings](AsyncWebServerRequest *request) {
@@ -85,11 +61,8 @@ ConfigurationServer::ConfigurationServer(Settings* settings, HardwareSerial* ser
         settings->store();
 
         request->send(200, "text/plain", "Credentials updated.");
-        
-        delay(1000);
-
-        ESP.restart();
     });
 
+    AsyncElegantOTA.begin(this->server);
     this->server->begin();
 }

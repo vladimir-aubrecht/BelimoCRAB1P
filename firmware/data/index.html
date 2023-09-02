@@ -1,0 +1,46 @@
+<html>
+
+<body>
+    <form method="POST" action="/credentials">
+        <table>
+            <tr>
+                <td>Wifi SSID:</td>
+                <td><input type="textbox" name="wifi_ssid" value="{wifiSSID}"></td>
+            </tr>
+            <tr>
+                <td>Wifi password:</td>
+                <td><input type="password" name="wifi_password" value="{wifiPassword}"></td>
+            </tr>
+            <tr>
+                <td>Mqtt host:</td>
+                <td><input type="textbox" name="mqtt_host" value="{mqttServerHost}"></td>
+            </tr>
+            <tr>
+                <td>Mqtt port:</td>
+                <td><input type="textbox" name="mqtt_port" value="{mqttServerPort}"></td>
+            </tr>
+            <tr>
+                <td>Mqtt username:</td>
+                <td><input type="textbox" name="mqtt_username" value="{mqttServerUsername}"></td>
+            </tr>
+            <tr>
+                <td>Mqtt password:</td>
+                <td><input type="password" name="mqtt_password" value="{mqttServerPassword}"></td>
+            </tr>
+            <tr>
+                <td>Mqtt id:</td>
+                <td><input type="textbox" name="mqtt_id" value="{mqttClientId}"></td>
+            </tr>
+            <tr>
+                <td>Mqtt topic:</td>
+                <td><input type="textbox" name="mqtt_topic" value="{mqttClientTopic}"></td>
+            </tr>
+        </table>
+        <input type="submit" value="Update">
+    </form>
+    <form method="POST" action="/restart">
+        <input type="submit" value="Restart">
+    </form>
+</body>
+
+</html>
