@@ -16,13 +16,8 @@ Recuperation* recuperation;
 MqttClient* mqttClient;
 ConfigurationServer* configurationServer = NULL;
 
-#ifndef LED_BUILTIN
-int LED_BUILTIN = 2;
-#endif 
-
 void setup() {
     Serial.begin(115200);
-    pinMode (LED_BUILTIN, OUTPUT);
 
     ILogger* serialLogger = new SerialLogger(&Serial);
     ILogger* htmlLogger = new HtmlLogger();
