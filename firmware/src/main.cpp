@@ -15,20 +15,22 @@ LedReader* ledReader;
 Recuperation* recuperation;
 MqttClient* mqttClient;
 ConfigurationServer* configurationServer = NULL;
+ILogger* logger = NULL;
+Settings* settings = NULL;
 
 void setup() {
     Serial.begin(115200);
 
     ILogger* serialLogger = new SerialLogger(&Serial);
     ILogger* htmlLogger = new HtmlLogger();
-    ILogger* logger = new AggregateLogger(serialLogger, htmlLogger);
+    logger = new AggregateLogger(serialLogger, htmlLogger);
 
     relay = new Relay(RECUPERATION_SWITCH_PIN, RECUPERATION_SWITCH_DELAY, logger);
-    ledReader = new LedReader(RECUPERATION_LED_LOW_PIN, RECUPERATION_LED_COMF_PIN, RECUPERATION_LED_HIGH_PIN);
+    ledReader = new LedReader(RECUPERATION_LED_LOW_PIN, RECUPERATION_LED_COMF_PIN, RECUPERATION_LED_HIGH_PIN, logger);
     recuperation = new Recuperation(ledReader, relay, logger);
     mqttClient = new MqttClient(recuperation, logger);
     
-    Settings* settings = new Settings(WIFI_SSID, WIFI_PASSWORD, MQTT_SERVER_HOST, MQTT_SERVER_PORT, MQTT_SERVER_USERNAME, MQTT_SERVER_PASSWORD, MQTT_CLIENT_ID, MQTT_CLIENT_TOPIC);
+    settings = new Settings(WIFI_SSID, WIFI_PASSWORD, MQTT_SERVER_HOST, MQTT_SERVER_PORT, MQTT_SERVER_USERNAME, MQTT_SERVER_PASSWORD, MQTT_CLIENT_ID, MQTT_CLIENT_TOPIC);
     settings->read();
 
     WiFi.begin(settings->wifiSSID.c_str(), settings->wifiPassword.c_str());
@@ -63,13 +65,18 @@ void setup() {
         recuperation->setState(3);        
     }
 
-    logger->debug("Mqtt initializing done.");
+    logger->debug("Setup finished.");
 }
 
 void loop() {
     if (mqttClient->isConnected()) {
         uint16_t selectedState = ledReader->readState();
         mqttClient->processState(selectedState);
+    }
+    else
+    {
+        logger->debug("Mqtt initializing ...");
+        mqttClient->initialise(settings);
     }
 
     delay(MCU_DEFAULT_LOOP_DELAY);

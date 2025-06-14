@@ -24,6 +24,7 @@ void MqttClient::callback(char* topic, byte* payload, unsigned int length) {
     uint8_t source = doc["source"];
 
     if (source == 0) {
+        this->logger->debug("No source found.");
         return;
     }
 
@@ -57,6 +58,7 @@ bool MqttClient::initialise(Settings* settings)
     }
 
     if (mqttRetryCount >= 10) {
+        this->logger->error("Did not manage to establish connection to mqtt after 10 tries.");
         return false;
     }
 

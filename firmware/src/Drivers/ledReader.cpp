@@ -1,10 +1,12 @@
 #include "LedReader.h"
+#include <string>
 
-LedReader::LedReader(uint8_t lowPin, uint8_t comfPin, uint8_t maxPin)
+LedReader::LedReader(uint8_t lowPin, uint8_t comfPin, uint8_t maxPin, ILogger* logger)
 {
     this->lowPin = lowPin;
     this->comfPin = comfPin;
     this->highPin = highPin;
+    this->logger = logger;
 
     pinMode(lowPin, INPUT_PULLDOWN);
     pinMode(comfPin, INPUT_PULLDOWN);
