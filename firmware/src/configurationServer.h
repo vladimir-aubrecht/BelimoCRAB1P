@@ -10,6 +10,7 @@ class ConfigurationServer
 {
     private:
         AsyncWebServer* server;
+        ILogger* logger;
 
     public:
         ConfigurationServer(Settings* settings, ILogger* logger);

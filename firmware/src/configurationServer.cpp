@@ -2,6 +2,8 @@
 
 ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
 {
+    this->logger = logger;
+
     if(!SPIFFS.begin(true)){
         logger->error("An Error has occurred while mounting SPIFFS");
         return;
@@ -65,4 +67,6 @@ ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
 
     AsyncElegantOTA.begin(this->server);
     this->server->begin();
+    this->logger->debug("Waiting for 60 seconds after startup for potentional flash of firmware (in case something is wrong ...)");
+    delay(60000);
 }

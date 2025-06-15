@@ -1,36 +1,16 @@
 #include "MqttClient.h"
 #include <ArduinoJson.h>
 
-MqttClient::MqttClient(Recuperation* recuperation, ILogger* logger)
+MqttClient::MqttClient(Recuperation* recuperation, ILogger* logger, PubSubClient* pubSubClient, HomeAssistantClient* haClient)
 {
     this->recuperation = recuperation;
     this->logger = logger;
-    this->wiFiClient = new WiFiClient();
-    this->client = new PubSubClient(*this->wiFiClient);
+    this->client = pubSubClient;
+    this->haClient = haClient;
 }
 
 void MqttClient::callback(char* topic, byte* payload, unsigned int length) {
-    char* message = (char*) payload;
-
-    StaticJsonDocument<200> doc;
-    DeserializationError error = deserializeJson(doc, payload, length);
-    
-    if (error) {
-        this->logger->error("Failed to parse JSON data: ");
-        this->logger->error(error.c_str());
-        return;
-    }
-    
-    uint8_t source = doc["source"];
-
-    if (source == 0) {
-        this->logger->debug("No source found.");
-        return;
-    }
-
-    uint8_t selectedState = doc["air_flow_state"];
-
-    recuperation->setState(selectedState);
+    this->haClient->receiveStates(topic, payload, length);
 }
 
 bool MqttClient::initialise(Settings* settings)
@@ -43,14 +23,18 @@ bool MqttClient::initialise(Settings* settings)
     using std::placeholders::_3;
     this->client->setCallback(std::bind(&MqttClient::callback, this, _1, _2, _3));
 
+    String avaibilityTopic = settings->mqttClientTopic + "/status";
+
     int8_t mqttRetryCount = 0;
     for (mqttRetryCount = 0; mqttRetryCount < 10 && !this->client->connected(); mqttRetryCount++) {
         this->logger->debug("Connecting to MQTT server...");
-        if (this->client->connect(settings->mqttClientId.c_str(), settings->mqttServerUsername.c_str(), settings->mqttServerPassword.c_str() )) {
+
+        if (this->client->connect(settings->mqttClientId.c_str(), settings->mqttServerUsername.c_str(), settings->mqttServerPassword.c_str(), avaibilityTopic.c_str(), 0, true, "offline" )) {
             this->logger->debug("Connected to MQTT server");
-            this->client->subscribe(settings->mqttClientTopic.c_str());
+            this->client->subscribe((settings->mqttClientTopic + "/fan/#").c_str());
         }
-        else {
+        else
+        {
             this->logger->error("Failed with state ");
             this->logger->error(String(this->client->state()));
             delay(2000);
@@ -61,6 +45,9 @@ bool MqttClient::initialise(Settings* settings)
         this->logger->error("Did not manage to establish connection to mqtt after 10 tries.");
         return false;
     }
+    
+    this->haClient->publishDiscoveryConfig(settings->mqttClientTopic);
+    this->client->publish(avaibilityTopic.c_str(), "online", true);
 
     return true;
 }
@@ -74,14 +61,8 @@ void MqttClient::processState(uint8_t state)
 {
     if (this->sentState != state) {
         this->sentState = state;
-       
-        char payload[41];
-        snprintf(payload, 41, "{\"air_flow_state\": %d, \"source\": 0}", state);
 
-        this->logger->debug("Sending payload:");
-        this->logger->debug(payload);
-        client->publish(this->mqttTopic, payload);
-        this->logger->debug(payload);
+        this->haClient->publishStates(state);
     }
 
     client->loop();
