@@ -1,4 +1,5 @@
 #include "ConfigurationServer.h"
+#include <ArduinoOTA.h>
 
 ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
 {
@@ -32,7 +33,9 @@ ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
         indexPage.replace("{mqttServerUsername}", settings->mqttServerUsername);
         indexPage.replace("{mqttServerPassword}", settings->mqttServerPassword);
         indexPage.replace("{mqttClientId}", settings->mqttClientId);
-        indexPage.replace("{mqttClientTopic}", settings->mqttClientTopic);
+        indexPage.replace("{mqttBaseTopic}", settings->mqttBaseTopic);
+        indexPage.replace("{mqttAvaibilityTopic}", settings->mqttAvaibilityTopic);
+        indexPage.replace("{mqttSubscribeTopic}", settings->mqttSubscribeTopic);
         
         request->send(200, "text/html", indexPage + buffer);
     });
@@ -50,7 +53,9 @@ ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
         const String mqttUsername = request->getParam("mqtt_username", true)->value();
         const String mqttPassword = request->getParam("mqtt_password", true)->value();
         const String mqttId = request->getParam("mqtt_id", true)->value();
-        const String mqttTopic = request->getParam("mqtt_topic", true)->value();
+        const String mqttBaseTopic = request->getParam("mqtt_base_topic", true)->value();
+        const String mqttAvaibilityTopic = request->getParam("mqtt_avaibility_topic", true)->value();
+        const String mqttSubscribeTopic = request->getParam("mqtt_subscribe_topic", true)->value();
 
         settings->wifiSSID = wifiSSID;
         settings->wifiPassword = wifiPassword;
@@ -59,7 +64,9 @@ ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
         settings->mqttServerUsername = mqttUsername;
         settings->mqttServerPassword = mqttPassword;
         settings->mqttClientId = mqttId;
-        settings->mqttClientTopic = mqttTopic;
+        settings->mqttBaseTopic = mqttBaseTopic;
+        settings->mqttAvaibilityTopic = mqttAvaibilityTopic;
+        settings->mqttSubscribeTopic = mqttSubscribeTopic;
         settings->store();
 
         request->send(200, "text/plain", "Credentials updated.");
@@ -67,6 +74,7 @@ ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
 
     AsyncElegantOTA.begin(this->server);
     this->server->begin();
+    ArduinoOTA.setTimeout(30000);
     this->logger->debug("Waiting for 60 seconds after startup for potentional flash of firmware (in case something is wrong ...)");
     delay(60000);
 }

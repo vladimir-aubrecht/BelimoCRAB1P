@@ -11,6 +11,8 @@
 #include "ConfigurationServer.h"
 #include "Settings.h"
 #include "Clients/HomeAssistantClient.h"
+#include <functional>
+using namespace std::placeholders;
 
 Relay* relay;
 LedReader* ledReader;
@@ -22,8 +24,25 @@ Settings* settings = NULL;
 PubSubClient* pubSubClient = NULL;
 WiFiClient* wifiClient = NULL;
 HomeAssistantClient* haClient;
+uint8_t lastState = -1;
 
-void setup() {
+void initMqttClient()
+{
+     if (mqttClient->initialise(settings, std::bind(&HomeAssistantClient::receiveStates, haClient, _1, _2, _3)))
+    {
+        haClient->publishDiscoveryConfig();
+
+        delay(10000);
+        recuperation->setState(1);
+        delay(1000);
+        recuperation->setState(3);
+
+        haClient->publishStates(3);    // Home Assistant needs to receive initial state
+    }
+}
+
+void setup()
+{
     Serial.begin(115200);
 
     ILogger* serialLogger = new SerialLogger(&Serial);
@@ -35,11 +54,13 @@ void setup() {
     recuperation = new Recuperation(ledReader, relay, logger);
     wifiClient = new WiFiClient();
     pubSubClient = new PubSubClient(*wifiClient);
-    haClient = new HomeAssistantClient(recuperation, logger, pubSubClient);
-    mqttClient = new MqttClient(recuperation, logger, pubSubClient, haClient);
+    mqttClient = new MqttClient(logger, pubSubClient);
     
-    settings = new Settings(WIFI_SSID, WIFI_PASSWORD, MQTT_SERVER_HOST, MQTT_SERVER_PORT, MQTT_SERVER_USERNAME, MQTT_SERVER_PASSWORD, MQTT_CLIENT_ID, MQTT_CLIENT_TOPIC);
+    
+    settings = new Settings(WIFI_SSID, WIFI_PASSWORD, MQTT_SERVER_HOST, MQTT_SERVER_PORT, MQTT_SERVER_USERNAME, MQTT_SERVER_PASSWORD, MQTT_CLIENT_ID, MQTT_BASE_TOPIC, MQTT_AVAIBILITY_TOPIC, MQTT_SUBSCRIBE_TOPIC);
     settings->read();
+
+    haClient = new HomeAssistantClient(recuperation, logger, mqttClient, settings);
 
     WiFi.begin(settings->wifiSSID.c_str(), settings->wifiPassword.c_str());
     int8_t wifiRetryCount = 0;
@@ -65,15 +86,7 @@ void setup() {
 
     logger->debug("Mqtt initializing ...");
 
-    if (mqttClient->initialise(settings))
-    {
-        delay(10000);
-        recuperation->setState(1);
-        delay(1000);
-        recuperation->setState(3);
-
-        mqttClient->processState(3);    // Home Assistant needs to receive initial state
-    }
+    initMqttClient();
 
     logger->debug("Setup finished.");
 }
@@ -81,12 +94,19 @@ void setup() {
 void loop() {
     if (mqttClient->isConnected()) {
         uint16_t selectedState = ledReader->readState();
-        mqttClient->processState(selectedState);
+        
+        if (selectedState != lastState)
+        {
+            lastState = selectedState;
+            haClient->publishStates(selectedState);
+        }
+
+        mqttClient->loop();
     }
     else
     {
         logger->debug("Mqtt initializing ...");
-        mqttClient->initialise(settings);
+        initMqttClient();
     }
 
     delay(MCU_DEFAULT_LOOP_DELAY);

@@ -1,10 +1,11 @@
 #include "HomeAssistantClient.h"
 
-HomeAssistantClient::HomeAssistantClient(Recuperation* recuperation, ILogger* logger, PubSubClient* pubSubClient)
+HomeAssistantClient::HomeAssistantClient(Recuperation* recuperation, ILogger* logger, MqttClient* client, Settings* settings)
 {
     this->recuperation = recuperation;
     this->logger = logger;
-    this->client = pubSubClient;
+    this->client = client;
+    this->settings = settings;
 }
 
 String HomeAssistantClient::getChipId() {
@@ -14,10 +15,8 @@ String HomeAssistantClient::getChipId() {
     return String(buf);
 }
 
-void HomeAssistantClient::publishDiscoveryConfig(String baseTopic)
+void HomeAssistantClient::publishDiscoveryConfig()
 {
-    this->baseTopic = baseTopic;
-
     StaticJsonDocument<1024> d;
     String chipId = this->getChipId();
 
@@ -26,17 +25,17 @@ void HomeAssistantClient::publishDiscoveryConfig(String baseTopic)
     // core entity data ---------------------------------------------------------
     d["name"]          = "Belimo CRA-B1P Ventilation";
     d["unique_id"]     = "belimo_crab1p_" + chipId;
-    d["availability_topic"]     = baseTopic + "/status";
+    d["availability_topic"]     = settings->mqttAvaibilityTopic;
     d["payload_available"]      = "online";
     d["payload_not_available"]  = "offline";
 
     // command / state topics ---------------------------------------------------
-    d["command_topic"]          = baseTopic + "/fan/set";           // optional
-    d["state_topic"]            = baseTopic + "/fan/state";
-    d["preset_mode_command_topic"] = baseTopic + "/fan/set_preset";
-    d["preset_mode_state_topic"]   = baseTopic + "/fan/preset";
-    d["percentage_command_topic"]  = baseTopic + "/fan/set_percent";
-    d["percentage_state_topic"]    = baseTopic + "/fan/percent";
+    d["command_topic"]          = settings->mqttBaseTopic + "/fan/set";           // optional
+    d["state_topic"]            = settings->mqttBaseTopic + "/fan/state";
+    d["preset_mode_command_topic"] = settings->mqttBaseTopic + "/fan/set_preset";
+    d["preset_mode_state_topic"]   = settings->mqttBaseTopic + "/fan/preset";
+    d["percentage_command_topic"]  = settings->mqttBaseTopic + "/fan/set_percent";
+    d["percentage_state_topic"]    = settings->mqttBaseTopic + "/fan/percent";
 
     // we expose three discrete presets
     JsonArray pm = d.createNestedArray("preset_modes");
@@ -58,9 +57,10 @@ void HomeAssistantClient::publishDiscoveryConfig(String baseTopic)
     char payload[1024];
     size_t n = serializeJson(d, payload, sizeof(payload));
 
-    this->client->setBufferSize(1024);
     bool ok = client->publish(discoveryTopic.c_str(), reinterpret_cast<const uint8_t*>(payload), (unsigned int)n, true);
     
+    this->client->publish(settings->mqttAvaibilityTopic.c_str(), "online", true);
+
     logger->debug("HA discovery publish = " + String(ok));
 }
 
@@ -111,7 +111,7 @@ void HomeAssistantClient::publishStates(uint8_t speedState)
         pct = 100;
     }
 
-    this->client->publish((this->baseTopic + "/fan/state").c_str(), "ON",  true);
-    this->client->publish((this->baseTopic + "/fan/preset").c_str(), preset, true);
-    this->client->publish((this->baseTopic + "/fan/percent").c_str(), String(pct).c_str(), true);
+    this->client->publish((settings->mqttBaseTopic + "/fan/state").c_str(), "ON",  true);
+    this->client->publish((settings->mqttBaseTopic + "/fan/preset").c_str(), preset, true);
+    this->client->publish((settings->mqttBaseTopic + "/fan/percent").c_str(), String(pct).c_str(), true);
 }

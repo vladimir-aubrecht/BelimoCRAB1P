@@ -1,37 +1,30 @@
 #include "MqttClient.h"
 #include <ArduinoJson.h>
 
-MqttClient::MqttClient(Recuperation* recuperation, ILogger* logger, PubSubClient* pubSubClient, HomeAssistantClient* haClient)
+MqttClient::MqttClient(ILogger* logger, PubSubClient* pubSubClient)
 {
-    this->recuperation = recuperation;
     this->logger = logger;
     this->client = pubSubClient;
-    this->haClient = haClient;
 }
 
-void MqttClient::callback(char* topic, byte* payload, unsigned int length) {
-    this->haClient->receiveStates(topic, payload, length);
-}
-
-bool MqttClient::initialise(Settings* settings)
+bool MqttClient::initialise(Settings* settings, MQTT_CALLBACK_SIGNATURE)
 {
-    this->mqttTopic = settings->mqttClientTopic.c_str();    
     this->client->setServer(settings->mqttServerHost.c_str(), settings->mqttServerPort);
 
     using std::placeholders::_1;
     using std::placeholders::_2;
     using std::placeholders::_3;
-    this->client->setCallback(std::bind(&MqttClient::callback, this, _1, _2, _3));
-
-    String avaibilityTopic = settings->mqttClientTopic + "/status";
+    this->client->setCallback(callback);
 
     int8_t mqttRetryCount = 0;
     for (mqttRetryCount = 0; mqttRetryCount < 10 && !this->client->connected(); mqttRetryCount++) {
         this->logger->debug("Connecting to MQTT server...");
 
-        if (this->client->connect(settings->mqttClientId.c_str(), settings->mqttServerUsername.c_str(), settings->mqttServerPassword.c_str(), avaibilityTopic.c_str(), 0, true, "offline" )) {
+        if (this->client->connect(settings->mqttClientId.c_str(), settings->mqttServerUsername.c_str(), settings->mqttServerPassword.c_str(), settings->mqttAvaibilityTopic.c_str(), 0, true, "offline" ))
+        {
+            this->client->setBufferSize(1024);
             this->logger->debug("Connected to MQTT server");
-            this->client->subscribe((settings->mqttClientTopic + "/fan/#").c_str());
+            this->client->subscribe(settings->mqttSubscribeTopic.c_str());
         }
         else
         {
@@ -46,9 +39,6 @@ bool MqttClient::initialise(Settings* settings)
         return false;
     }
     
-    this->haClient->publishDiscoveryConfig(settings->mqttClientTopic);
-    this->client->publish(avaibilityTopic.c_str(), "online", true);
-
     return true;
 }
 
@@ -57,13 +47,17 @@ bool MqttClient::isConnected()
     return client->connected();
 }
 
-void MqttClient::processState(uint8_t state)
+void MqttClient::publish(String topic, String payload, boolean retained)
 {
-    if (this->sentState != state) {
-        this->sentState = state;
+    this->client->publish(topic.c_str(), payload.c_str(), retained);
+}
 
-        this->haClient->publishStates(state);
-    }
+bool MqttClient::publish(const char* topic, const uint8_t* payload, unsigned int plength, boolean retained)
+{
+    this->client->publish(topic, payload, plength,retained);
+}
 
+void MqttClient::loop()
+{
     client->loop();
 }

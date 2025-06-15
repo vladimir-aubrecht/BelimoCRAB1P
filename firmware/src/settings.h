@@ -12,7 +12,9 @@ class Settings
         String defaultMqttServerUsername;
         String defaultMqttServerPassword;
         String defaultMqttClientId;
-        String defaultMqttClientTopic;
+        String defaultMqttBaseTopic;
+        String defaultMqttAvaibilityTopic;
+        String defaultMqttSubscribeTopic;
 
     public:
         String wifiSSID;
@@ -22,9 +24,11 @@ class Settings
         String mqttServerUsername;
         String mqttServerPassword;
         String mqttClientId;
-        String mqttClientTopic;
+        String mqttBaseTopic;
+        String mqttAvaibilityTopic;
+        String mqttSubscribeTopic;
 
-        Settings(String defaultWifiSSID, String defaultWifiPassword, String defaultMqttServerHost, uint16_t defaultMqttServerPort, String defaultMqttServerUsername, String defaultMqttServerPassword, String defaultMqttClientId, String defaultMqttClientTopic);
+        Settings(String defaultWifiSSID, String defaultWifiPassword, String defaultMqttServerHost, uint16_t defaultMqttServerPort, String defaultMqttServerUsername, String defaultMqttServerPassword, String defaultMqttClientId, String defaultMqttBaseTopic, String defaultMqttAvaibilityTopic, String defaultMqttSubscribeTopic);
 
         void read();
         void store();
