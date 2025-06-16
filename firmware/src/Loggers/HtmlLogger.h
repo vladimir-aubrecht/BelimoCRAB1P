@@ -6,7 +6,7 @@ class HtmlLogger : public ILogger
 {
 private:
     String outputString;
-    int bufferLength = 2000;
+    int bufferLength = 6000;
 
 public:
     HtmlLogger();

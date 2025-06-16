@@ -26,6 +26,35 @@ WiFiClient* wifiClient = NULL;
 HomeAssistantClient* haClient;
 uint8_t lastState = -1;
 
+// choose your NTP server(s)
+const char* ntpServer = "pool.ntp.org";
+// offset in seconds from UTC (e.g. CET = +1h = 3600)
+const long  gmtOffset_sec    = 3600;
+// daylight-saving offset in seconds (CET→CEST = +1h)
+const int   daylightOffset_sec = 3600;
+
+void configureTime()
+{
+    int retryCount = 10;
+    // configure time
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    logger->debug("Waiting for time");
+    // option A: block until time is set
+    struct tm timeinfo;
+    while(!getLocalTime(&timeinfo))
+    {
+        if (retryCount <= 0)
+        {
+            break;
+        }
+
+        Serial.print(".");
+        delay(500);
+        retryCount--;
+    }
+    logger->debug("\nTime initialized");
+}
+
 void initMqttClient()
 {
      if (mqttClient->initialise(settings, std::bind(&HomeAssistantClient::receiveStates, haClient, _1, _2, _3)))
@@ -81,6 +110,7 @@ void setup()
 
     logger->debug("Connected to WiFi");
 
+    configureTime();
 
     configurationServer = new ConfigurationServer(settings, logger);
 
@@ -92,7 +122,8 @@ void setup()
 }
 
 void loop() {
-    if (mqttClient->isConnected()) {
+    if (mqttClient->isConnected())
+    {
         uint16_t selectedState = ledReader->readState();
         
         if (selectedState != lastState)
@@ -100,14 +131,13 @@ void loop() {
             lastState = selectedState;
             haClient->publishStates(selectedState);
         }
-
-        mqttClient->loop();
     }
     else
     {
         logger->debug("Mqtt initializing ...");
         initMqttClient();
     }
-
+    
+    mqttClient->loop();
     delay(MCU_DEFAULT_LOOP_DELAY);
 }

@@ -47,14 +47,14 @@ bool MqttClient::isConnected()
     return client->connected();
 }
 
-void MqttClient::publish(String topic, String payload, boolean retained)
+bool MqttClient::publish(String topic, String payload, boolean retained)
 {
-    this->client->publish(topic.c_str(), payload.c_str(), retained);
+    return this->client->publish(topic.c_str(), payload.c_str(), retained);
 }
 
 bool MqttClient::publish(const char* topic, const uint8_t* payload, unsigned int plength, boolean retained)
 {
-    this->client->publish(topic, payload, plength,retained);
+    return this->client->publish(topic, payload, plength,retained);
 }
 
 void MqttClient::loop()

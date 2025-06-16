@@ -12,13 +12,11 @@ void Recuperation::setState(uint8_t state) {
         return;
     }
 
-    this->logger->debug("Requested state: ");
-    this->logger->debug(String(state));
-
     while (this->ledReader->readState() != state)
     {
+        this->logger->debug("Requested state: " + String(state));
         this->relay->toggle();
     }
 
-    this->logger->debug("State set.");
+    this->logger->debug("LED and MCU states are in sync.");
 }

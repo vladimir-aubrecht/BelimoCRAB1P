@@ -14,7 +14,7 @@ class MqttClient {
     public:
         MqttClient(ILogger* logger, PubSubClient* pubSubClient);
         bool initialise(Settings* settings, MQTT_CALLBACK_SIGNATURE);
-        void publish(String topic, String payload, boolean retained);
+        bool publish(String topic, String payload, boolean retained);
         bool publish(const char* topic, const uint8_t* payload, unsigned int plength, boolean retained);
         void loop();
         bool isConnected();

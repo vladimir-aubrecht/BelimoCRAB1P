@@ -24,6 +24,8 @@ uint16_t LedReader::readState()
 
     uint8_t selectedState = 0;  // all leds are off
 
+    this->logger->debug("LED voltages, low: " + String(voltageLow) + " comf: " + String(voltageComf) + " high: " + String(voltageHigh));
+
     if (voltageLow < 500) {
         selectedState = 1;
     } else if (voltageComf < 500) {
@@ -31,6 +33,8 @@ uint16_t LedReader::readState()
     } else if (voltageHigh < 500) {
         selectedState = 3;
     }
+
+    this->logger->debug("Found LED state: " + String(selectedState));
 
     return selectedState;
 }

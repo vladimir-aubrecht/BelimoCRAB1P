@@ -57,11 +57,12 @@ void HomeAssistantClient::publishDiscoveryConfig()
     char payload[1024];
     size_t n = serializeJson(d, payload, sizeof(payload));
 
-    bool ok = client->publish(discoveryTopic.c_str(), reinterpret_cast<const uint8_t*>(payload), (unsigned int)n, true);
-    
-    this->client->publish(settings->mqttAvaibilityTopic.c_str(), "online", true);
+    const uint8_t* castedPayload = reinterpret_cast<const uint8_t*>(payload);
+    bool ok = client->publish(discoveryTopic.c_str(), castedPayload, (unsigned int)n, true);
 
-    logger->debug("HA discovery publish = " + String(ok));
+    bool onlineOk = this->client->publish(settings->mqttAvaibilityTopic.c_str(), "online", true);
+
+    logger->debug("HA discovery publish: " + String(ok) + "online publish: " + String(onlineOk));
 }
 
 void HomeAssistantClient::receiveStates(char* topic, byte* payload, unsigned int len)
@@ -111,7 +112,18 @@ void HomeAssistantClient::publishStates(uint8_t speedState)
         pct = 100;
     }
 
-    this->client->publish((settings->mqttBaseTopic + "/fan/state").c_str(), "ON",  true);
-    this->client->publish((settings->mqttBaseTopic + "/fan/preset").c_str(), preset, true);
-    this->client->publish((settings->mqttBaseTopic + "/fan/percent").c_str(), String(pct).c_str(), true);
+    if (!this->client->publish((settings->mqttBaseTopic + "/fan/state").c_str(), "ON",  true))
+    {
+        logger->error("Publish to /fan/state failed.");
+    }
+
+    if (!this->client->publish((settings->mqttBaseTopic + "/fan/preset").c_str(), preset, true))
+    {
+        logger->error("Publish to /fan/preset failed.");
+    }
+
+    if (!this->client->publish((settings->mqttBaseTopic + "/fan/percent").c_str(), String(pct).c_str(), true))
+    {
+        logger->error("Publish to /fan/percent failed.");
+    }
 }

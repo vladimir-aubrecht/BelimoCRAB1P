@@ -5,19 +5,30 @@ ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
 {
     this->logger = logger;
 
-    if(!SPIFFS.begin(true)){
+    String indexTemplate = "";
+
+    if(SPIFFS.begin(true))
+    {
+        File file = SPIFFS.open("/index.html");
+        if(!file){
+            logger->warning("Files in filesystem not found. Upload it.");
+        }
+
+        indexTemplate = file.readString();
+        
+        if (file)
+        {
+            file.close();
+        }
+    }
+    else
+    {
         logger->error("An Error has occurred while mounting SPIFFS");
-        return;
     }
 
-    File file = SPIFFS.open("/index.html");
-    if(!file){
-        logger->error("Files in filesystem not found. Upload it.");
-        return;
-    }
-
-    String indexTemplate = file.readString();
-    file.close();
+    if(indexTemplate.length() <= 0){
+        logger->warning("HTML template seems broken.");
+    }    
 
     this->server = new AsyncWebServer(80);
 
@@ -41,8 +52,8 @@ ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
     });
 
     server->on("/restart", HTTP_POST, [](AsyncWebServerRequest *request) {
-        ESP.restart();
         request->send(200, "text/plain", "Restarted.");
+        ESP.restart();
     });
 
     server->on("/credentials", HTTP_POST, [settings](AsyncWebServerRequest *request) {
@@ -76,5 +87,10 @@ ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
     this->server->begin();
     ArduinoOTA.setTimeout(30000);
     this->logger->debug("Waiting for 60 seconds after startup for potentional flash of firmware (in case something is wrong ...)");
-    delay(60000);
+    
+    for (int i = 0; i < 10; i++)
+    {
+        delay(6000);
+        this->logger->debug("Waiting...");
+    }
 }
