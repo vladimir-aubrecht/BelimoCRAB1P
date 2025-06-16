@@ -8,6 +8,8 @@ private:
     ILogger* logger1;
     ILogger* logger2;
 
+    String appendDateTime(String message);
+
 public:
     AggregateLogger(ILogger* logger1, ILogger* logger2);
 

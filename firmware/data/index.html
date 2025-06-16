@@ -2,38 +2,50 @@
 
 <body>
     <form method="POST" action="/credentials">
+        <h1>Wifi</h1>
         <table>
             <tr>
-                <td>Wifi SSID:</td>
+                <td>SSID</td>
                 <td><input type="textbox" name="wifi_ssid" value="{wifiSSID}"></td>
             </tr>
             <tr>
-                <td>Wifi password:</td>
+                <td>Password</td>
                 <td><input type="password" name="wifi_password" value="{wifiPassword}"></td>
             </tr>
+        </table>
+        <h1>MQTT</h1>
+        <table>
             <tr>
-                <td>Mqtt host:</td>
+                <td>Host</td>
                 <td><input type="textbox" name="mqtt_host" value="{mqttServerHost}"></td>
             </tr>
             <tr>
-                <td>Mqtt port:</td>
+                <td>Port</td>
                 <td><input type="textbox" name="mqtt_port" value="{mqttServerPort}"></td>
             </tr>
             <tr>
-                <td>Mqtt username:</td>
+                <td>Username</td>
                 <td><input type="textbox" name="mqtt_username" value="{mqttServerUsername}"></td>
             </tr>
             <tr>
-                <td>Mqtt password:</td>
+                <td>Password</td>
                 <td><input type="password" name="mqtt_password" value="{mqttServerPassword}"></td>
             </tr>
             <tr>
-                <td>Mqtt id:</td>
+                <td>Id</td>
                 <td><input type="textbox" name="mqtt_id" value="{mqttClientId}"></td>
             </tr>
             <tr>
-                <td>Mqtt topic:</td>
-                <td><input type="textbox" name="mqtt_topic" value="{mqttClientTopic}"></td>
+                <td>Base topic</td>
+                <td><input type="textbox" name="mqtt_base_topic" value="{mqttBaseTopic}"></td>
+            </tr>
+            <tr>
+                <td>Avaibility topic</td>
+                <td><input type="textbox" name="mqtt_avaibility_topic" value="{mqttAvaibilityTopic}"></td>
+            </tr>
+            <tr>
+                <td>subscribe topic</td>
+                <td><input type="textbox" name="mqtt_subscribe_topic" value="{mqttSubscribeTopic}"></td>
             </tr>
         </table>
         <input type="submit" value="Update">

@@ -1,20 +1,34 @@
 #include "ConfigurationServer.h"
+#include <ArduinoOTA.h>
 
 ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
 {
-    if(!SPIFFS.begin(true)){
+    this->logger = logger;
+
+    String indexTemplate = "";
+
+    if(SPIFFS.begin(true))
+    {
+        File file = SPIFFS.open("/index.html");
+        if(!file){
+            logger->warning("Files in filesystem not found. Upload it.");
+        }
+
+        indexTemplate = file.readString();
+        
+        if (file)
+        {
+            file.close();
+        }
+    }
+    else
+    {
         logger->error("An Error has occurred while mounting SPIFFS");
-        return;
     }
 
-    File file = SPIFFS.open("/index.html");
-    if(!file){
-        logger->error("Files in filesystem not found. Upload it.");
-        return;
-    }
-
-    String indexTemplate = file.readString();
-    file.close();
+    if(indexTemplate.length() <= 0){
+        logger->warning("HTML template seems broken.");
+    }    
 
     this->server = new AsyncWebServer(80);
 
@@ -30,14 +44,16 @@ ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
         indexPage.replace("{mqttServerUsername}", settings->mqttServerUsername);
         indexPage.replace("{mqttServerPassword}", settings->mqttServerPassword);
         indexPage.replace("{mqttClientId}", settings->mqttClientId);
-        indexPage.replace("{mqttClientTopic}", settings->mqttClientTopic);
+        indexPage.replace("{mqttBaseTopic}", settings->mqttBaseTopic);
+        indexPage.replace("{mqttAvaibilityTopic}", settings->mqttAvaibilityTopic);
+        indexPage.replace("{mqttSubscribeTopic}", settings->mqttSubscribeTopic);
         
         request->send(200, "text/html", indexPage + buffer);
     });
 
     server->on("/restart", HTTP_POST, [](AsyncWebServerRequest *request) {
-        ESP.restart();
         request->send(200, "text/plain", "Restarted.");
+        ESP.restart();
     });
 
     server->on("/credentials", HTTP_POST, [settings](AsyncWebServerRequest *request) {
@@ -48,7 +64,9 @@ ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
         const String mqttUsername = request->getParam("mqtt_username", true)->value();
         const String mqttPassword = request->getParam("mqtt_password", true)->value();
         const String mqttId = request->getParam("mqtt_id", true)->value();
-        const String mqttTopic = request->getParam("mqtt_topic", true)->value();
+        const String mqttBaseTopic = request->getParam("mqtt_base_topic", true)->value();
+        const String mqttAvaibilityTopic = request->getParam("mqtt_avaibility_topic", true)->value();
+        const String mqttSubscribeTopic = request->getParam("mqtt_subscribe_topic", true)->value();
 
         settings->wifiSSID = wifiSSID;
         settings->wifiPassword = wifiPassword;
@@ -57,7 +75,9 @@ ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
         settings->mqttServerUsername = mqttUsername;
         settings->mqttServerPassword = mqttPassword;
         settings->mqttClientId = mqttId;
-        settings->mqttClientTopic = mqttTopic;
+        settings->mqttBaseTopic = mqttBaseTopic;
+        settings->mqttAvaibilityTopic = mqttAvaibilityTopic;
+        settings->mqttSubscribeTopic = mqttSubscribeTopic;
         settings->store();
 
         request->send(200, "text/plain", "Credentials updated.");
@@ -65,4 +85,12 @@ ConfigurationServer::ConfigurationServer(Settings* settings, ILogger* logger)
 
     AsyncElegantOTA.begin(this->server);
     this->server->begin();
+    ArduinoOTA.setTimeout(30000);
+    this->logger->debug("Waiting for 60 seconds after startup for potentional flash of firmware (in case something is wrong ...)");
+    
+    for (int i = 0; i < 10; i++)
+    {
+        delay(6000);
+        this->logger->debug("Waiting...");
+    }
 }
